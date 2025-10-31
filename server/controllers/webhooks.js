@@ -55,6 +55,7 @@ export const clerkWebhooks = async (req,res) =>{
 const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY)
 
 export const stripeWebhooks = async(request,response)=>{
+    console.log("Stripe webhook received");
   const sig = request.headers['stripe-signature'];
 
   let event;
@@ -64,11 +65,14 @@ export const stripeWebhooks = async(request,response)=>{
   }
   catch (err) {
     response.status(400).send(`Webhook Error: ${err.message}`);
+    return;
   }
 
 
   // Handle the event
   switch (event.type) {
+
+
     case 'payment_intent.succeeded':{
       const paymentIntent = event.data.object;
       const paymentIntentId = paymentIntent.id;
@@ -76,11 +80,15 @@ export const stripeWebhooks = async(request,response)=>{
       const session = await stripeInstance.checkout.sessions.list({
         payment_intent: paymentIntentId
       })
-
       const {purchaseId} = session.data[0].metadata;
-
+      // Inside payment_intent.succeeded case
+      // console.log("Payment succeeded event received:", paymentIntentId, purchaseId);
       const purchaseData = await Purchase.findById(purchaseId)
-      const userData = await userEnrolledCourses.findById(purchaseData.userId)
+    // //     if (!purchaseData) {
+    // // console.log("Purchase not found for ID:", purchaseId);
+    // // break;
+    //     }
+      const userData = await User.findById(purchaseData.userId)
       const courseData = await Course.findById(purchaseData.courseId.toString())
 
       courseData.enrolledStudents.push(userData)
@@ -89,8 +97,9 @@ export const stripeWebhooks = async(request,response)=>{
       userData.enrolledCourses.push(courseData._id)
       await userData.save()
 
-      purchaseData.status = 'completed'
+      purchaseData.status = "completed"
       await purchaseData.save()
+
 
       break;
     }
@@ -118,3 +127,102 @@ export const stripeWebhooks = async(request,response)=>{
   // Return a response to acknowledge receipt of the event
   response.json({received: true});
 }
+
+// export const stripeWebhooks = async(request, response) => {
+//   console.log("Stripe webhook received");
+//   const sig = request.headers['stripe-signature'];
+//   let event;
+
+//   try {
+//     event = Stripe.webhooks.constructEvent(request.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+//   } catch (err) {
+//     console.error("Stripe webhook error:", err.message);
+//     response.status(400).send(`Webhook Error: ${err.message}`);
+//     return;
+//   }
+
+//   try {
+//     switch (event.type) {
+//       case 'payment_intent.succeeded': {
+//         const paymentIntent = event.data.object;
+//         const paymentIntentId = paymentIntent.id;
+
+//         const session = await stripeInstance.checkout.sessions.list({
+//           payment_intent: paymentIntentId
+//         });
+
+//         if (!session.data.length) {
+//           console.log("No session found for payment intent:", paymentIntentId);
+//           break;
+//         }
+
+//         const { purchaseId } = session.data[0].metadata;
+//         if (!purchaseId) {
+//           console.log("No purchaseId in session metadata");
+//           break;
+//         }
+
+//         console.log("Payment succeeded event received:", paymentIntentId, purchaseId);
+
+//         const purchaseData = await Purchase.findById(purchaseId);
+//         if (!purchaseData) {
+//           console.log("Purchase not found for ID:", purchaseId);
+//           break;
+//         }
+
+//         const userData = await User.findById(purchaseData.userId);
+//         if (!userData) {
+//           console.log("User not found for ID:", purchaseData.userId);
+//           break;
+//         }
+
+//         const courseData = await Course.findById(purchaseData.courseId.toString());
+//         if (!courseData) {
+//           console.log("Course not found for ID:", purchaseData.courseId);
+//           break;
+//         }
+
+//         courseData.enrolledStudents.push(userData._id);
+//         await courseData.save();
+
+//         userData.enrolledCourses.push(courseData._id);
+//         await userData.save();
+
+//         purchaseData.status = "completed";
+//         await purchaseData.save();
+
+//         break;
+//       }
+
+//       case 'payment_intent.payment_failed': {
+//         const paymentIntent = event.data.object;
+//         const paymentIntentId = paymentIntent.id;
+
+//         const session = await stripeInstance.checkout.sessions.list({
+//           payment_intent: paymentIntentId
+//         });
+
+//         if (!session.data.length) {
+//           console.log("No session found for payment intent:", paymentIntentId);
+//           break;
+//         }
+
+//         const { purchaseId } = session.data[0].metadata;
+//         const purchaseData = await Purchase.findById(purchaseId);
+//         if (purchaseData) {
+//           purchaseData.status = 'failed';
+//           await purchaseData.save();
+//         }
+//         break;
+//       }
+
+//       default:
+//         console.log(`Unhandled event type ${event.type}`);
+//     }
+
+//     response.json({ received: true });
+//   } catch (err) {
+//     console.error("Error in Stripe webhook handler:", err);
+//     response.status(500).send(`Internal Server Error: ${err.message}`);
+//   }
+// }
