@@ -1,89 +1,92 @@
+import Stripe from "stripe"
+import Course from "../models/Course.js"
+import { Purchase } from "../models/Purchase.js"
 import User from "../models/User.js"
-import Stripe from "stripe";
-import Course from "../models/Course.js";
-import { Purchase } from "../models/Purchase.js";
+// import { CourseProgress } from "../models/CourseProgress.js"
+import dotenv from "dotenv";
+dotenv.config();
 
-//Get User data
-export const getUserData = async (req,res)=>{
-  try {
-    const userId = req.auth.userId
-    const user = await User.findById(userId)
-    
-    if(!user){
-      res.json({success:false, messsage: 'User not found'})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// Get users data
+export const getUserData = async(req,res)=>{
+    try {
+        const userId = req.auth.userId
+        const user = await User.findById(userId)
+        if(!user){
+            res.json({success: false, message:"User not found!"})
+        }
+
+        res.json({success: true, user});
+    } catch (error) {
+        res.json({success: false, message:error.message})
     }
-
-      res.json({success:true, user})
-
-  } catch (error) {
-      res.json({success:false, messsage: error.messsage})
-  }
 }
 
-// User Enrolled Courses with Lecture LINKs
-export const userEnrolledCourses = async (req,res)=> {
-  try {
-    const userId = req.auth.userId
-    const userData = await User.findById(userId).populate('enrolledCourses')
+// User enrolled course with lecture link
 
-    res.json({success:true, enrolledCourses: userData.enrolledCourses})
+export const userEnrolledCourses = async (req,res)=>{
+    try {
+        const userId = req.auth.userId
+        const userData = await User.findById(userId).populate('enrolledCourses')
 
-  } catch (error) {
-      res.json({success:false, messsage: error.messsage})
-  }
+        res.json({success:true, enrolledCourses: userData.enrolledCourses})
+
+
+    } catch (error) {
+        res.json({success: false, message:error.message})
+    }
 }
 
 
-// Purchase Course
+// Purchase course
 export const purchaseCourse = async (req, res) => {
   try {
     const { courseId } = req.body;
     const { origin } = req.headers;
     const userId = req.auth.userId;
-    
     const userData = await User.findById(userId);
     const courseData = await Course.findById(courseId);
 
     if (!userData || !courseData) {
-      return res.json({ success: false, message: 'Data Not Found' });
+      return res.json({ success: false, message: "Data Not Found" });
     }
 
-    const purchaseData = {
+    const finalAmount =
+      courseData.coursePrice -
+      (courseData.discount * courseData.coursePrice) / 100;
+
+    const newPurchase = await Purchase.create({
       courseId: courseData._id,
       userId,
-      amount: (courseData.coursePrice - courseData.discount * courseData.coursePrice/100).toFixed(2),
-    }
+      amount: finalAmount,
+      status: "pending",
+    });
 
-    const newPurchase = await Purchase.create(purchaseData)
-
-    //Stripe Gateway Initialize
-    const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY)
-
-    const currency = process.env.CURRENCY.toLowerCase()
-    //Creating line items for stripe
-    const line_items = [{
-      price_data: {
-        currency,
-        product_data: {
-          name: courseData.courseTitle
-        },
-        unit_amount: Math.floor(newPurchase.amount)*100
-      },
-      quantity: 1
-    }]
-    const session = await stripeInstance.checkout.sessions.create({
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
       success_url: `${origin}/loading/my-enrollments`,
-      cancel_url: `${origin}`,
-      line_items: line_items,
-      mode: 'payment',
+      cancel_url: `${origin}/`,
+      line_items: [
+        {
+          price_data: {
+            currency: process.env.CURRENCY.toLowerCase(),
+            product_data: {
+              name: courseData.courseTitle,
+            },
+            unit_amount: Math.round(finalAmount * 100),
+          },
+          quantity: 1,
+        },
+      ],
       metadata: {
-        purchaseId: newPurchase._id.toString()
-      }
-    })
+        purchaseId: newPurchase._id.toString(),
+      },
+    });
 
-    res.json({success: true, session_url: session.url})
-    
+    res.json({ success: true, session_url: session.url });
   } catch (error) {
-    res.json({success: false, message: error.message})
+    res.json({ success: false, message: error.message });
   }
 };
