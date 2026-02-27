@@ -2,7 +2,7 @@ import Stripe from "stripe"
 import Course from "../models/Course.js"
 import Purchase from "../models/Purchase.js"
 import User from "../models/User.js"
-// import { CourseProgress } from "../models/CourseProgress.js"
+import CourseProgress from "../models/CourseProgress.js"
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -90,3 +90,41 @@ export const purchaseCourse = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
+
+//Update User Course Progress
+export const updateCourseProgress = async(req,res)=>{
+  try {
+    const {courseId, lectureId} = req.body
+    const userId = req.auth.userId
+    const progressData = await CourseProgress.findOne({userId, courseId})
+
+    if(progressData){
+      if(progressData.lectureCompleted.includes(lectureId)){
+        return res.json({success: true, message: "Lecture already completed"})
+      }
+      progressData.lectureCompleted.push(lectureId)
+      await progressData.save()
+    }else{
+      await CourseProgress.create({
+        userId,
+        courseId,
+        lectureCompleted: [lectureId]
+      })
+    }
+    return res.json({success: true, message: "Progress Updated"})
+  }catch(error){
+    res.json({success: false, message: error.message})
+  }
+}
+
+//get user Course Progress
+export const getCourseProgress = async(req,res)=>{
+  try {
+    const userId = req.auth.userId;
+    const { courseId } = req.body;
+    const progressData = await CourseProgress.findOne({userId, courseId})
+    res.json({success: true, progressData})
+  } catch (error) {
+    res.json({success: false, message: error.message})
+  }
+}
