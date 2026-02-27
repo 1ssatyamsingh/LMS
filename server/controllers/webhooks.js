@@ -65,7 +65,7 @@ export const stripeWebhooks = async(request,response)=>{
   let event;
 
   try {
-    event = Stripe.webhooks.constructEvent(request.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    event = stripeInstance.webhooks.constructEvent(request.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   }
   catch (err) {
     response.status(400).send(`Webhook Error: ${err.message}`);
@@ -85,7 +85,7 @@ export const stripeWebhooks = async(request,response)=>{
       const {purchaseId} = session.data[0].metadata;
 
       const purchaseData = await Purchase.findById(purchaseId)
-      const userData = await userEnrolledCourses.findById(purchaseData.userId)
+      const userData = await User.findById(purchaseData.userId)
       const courseData = await Course.findById(purchaseData.courseId.toString())
 
       courseData.enrolledStudents.push(userData)
