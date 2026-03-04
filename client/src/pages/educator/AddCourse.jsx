@@ -290,7 +290,7 @@ const AddCourse = () => {
             </div>
           ))}
           <div
-            className="flex justify-center itmes-center bg-blue-100 p-2 rounded-lg cursor-pointer"
+            className="flex justify-center items-center bg-blue-100 p-2 rounded-lg cursor-pointer"
             onClick={() => handleChapter("add")}
           >
             + Add Chapter
