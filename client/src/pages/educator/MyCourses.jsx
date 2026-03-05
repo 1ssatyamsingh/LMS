@@ -17,7 +17,11 @@ const MyCourses = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      data.success && setCourses(data.courses);
+      if (data.success) {
+        setCourses(data.courses);
+      } else {
+        toast.error(data.message);
+      }
     } catch (err) {
       toast.error(err.message);
     }
