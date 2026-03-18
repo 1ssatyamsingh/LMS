@@ -16,22 +16,18 @@ const app = express();
 await connectDB();
 await connectCloudinary();
 
-app.use(cors({
-  origin: ["http://localhost:5173", "https://your-frontend.vercel.app"],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+app.use(cors());
 app.use(clerkMiddleware());
 
 // Stripe Webhook (RAW body)
 app.post(
-  "/stripe",
+  "/stripe-webhook",
   express.raw({ type: "application/json" }),
   stripeWebhooks
 );
 
 // Clerk Webhook
-app.post("/clerk", express.json(), clerkWebhooks);
+app.post("/clerk-webhook", express.raw({ type: "application/json" }), clerkWebhooks);
 
 // Normal Routes
 app.use(express.json());

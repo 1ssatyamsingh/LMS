@@ -21,7 +21,7 @@ const StudentEnrolled = () => {
         },
       );
       if (data.success) {
-        setEnrolledStudents(data.enrollments);
+        setEnrolledStudents(data.enrolledStudents);
       } else {
         toast.error(data.message);
       }

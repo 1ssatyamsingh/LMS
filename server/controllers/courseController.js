@@ -7,7 +7,7 @@ export const getAllCourse = async(req,res)=>{
 
     res.json({success: true,courses})
   } catch (error) {
-    res.json({success: false,message: error.messages})
+    res.json({success: false,message: error.message})
   }
 }
 
