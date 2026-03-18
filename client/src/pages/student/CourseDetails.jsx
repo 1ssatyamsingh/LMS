@@ -8,7 +8,6 @@ import Footer from "../../components/students/Footer";
 import YouTube from "react-youtube";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { use } from "react";
 
 const CourseDetails = () => {
   const { id } = useParams();
@@ -32,7 +31,7 @@ const CourseDetails = () => {
 
   const fetchCourseData = async () => {
     try {
-      const data = await axios.get(backendUrl + "/api/course/" + id);
+      const { data } = await axios.get(backendUrl + "/api/course/" + id);
 
       if (data.success) {
         setCourseData(data.course);
