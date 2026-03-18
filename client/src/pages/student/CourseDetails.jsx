@@ -8,7 +8,6 @@ import Footer from "../../components/students/Footer";
 import YouTube from "react-youtube";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { use } from "react";
 
 const CourseDetails = () => {
   const { id } = useParams();
@@ -32,10 +31,10 @@ const CourseDetails = () => {
 
   const fetchCourseData = async () => {
     try {
-      const data = await axios.get(backendUrl + "/api/course/" + id);
+      const { data } = await axios.get(backendUrl + "/api/course/" + id);
 
       if (data.success) {
-        setCourseData(data.course);
+        setCourseData(data.courseData);
       } else {
         toast.error(data.message);
       }
@@ -44,8 +43,9 @@ const CourseDetails = () => {
     }
   };
 
-  const encrollCourse = async () => {
+  const enrollCourse = async () => {
     try {
+      console.log(userData);
       if (!userData) {
         toast.error("Please login to enroll in the course");
         return;
@@ -278,7 +278,7 @@ const CourseDetails = () => {
               </div>
             </div>
             <button
-              onClick={encrollCourse}
+              onClick={enrollCourse}
               className="md:mt-6 mt-4 w-full py-3 rounded bg-blue-600 text-white font-medium"
             >
               {isAlreadyEnrolled ? "Already Enrolled" : "Enroll Now"}

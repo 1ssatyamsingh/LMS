@@ -4,17 +4,22 @@ import Purchase from "../models/Purchase.js"
 import User from "../models/User.js"
 import CourseProgress from "../models/CourseProgress.js"
 import dotenv from "dotenv";
+import { applyCors } from '../utils/cors.js'; // ✅ import
+
 dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Get users data
 export const getUserData = async(req,res)=>{
+  if (applyCors(req, res)) return; // ✅ CORS
+
     try {
         const userId = req.auth.userId
         const user = await User.findById(userId)
         if(!user){
             res.json({success: false, message:"User not found!"})
+            return
         }
 
         res.json({success: true, user});
@@ -26,6 +31,8 @@ export const getUserData = async(req,res)=>{
 // User enrolled course with lecture link
 
 export const userEnrolledCourses = async (req,res)=>{
+  if (applyCors(req, res)) return; // ✅ CORS
+
     try {
         const userId = req.auth.userId
         const userData = await User.findById(userId).populate('enrolledCourses')
@@ -41,6 +48,8 @@ export const userEnrolledCourses = async (req,res)=>{
 
 // Purchase course
 export const purchaseCourse = async (req, res) => {
+  if (applyCors(req, res)) return; // ✅ CORS
+
   try {
     const { courseId } = req.body;
     const { origin } = req.headers;
@@ -93,6 +102,8 @@ export const purchaseCourse = async (req, res) => {
 
 //Update User Course Progress
 export const updateCourseProgress = async(req,res)=>{
+    if (applyCors(req, res)) return; // ✅ CORS
+  
   try {
     const {courseId, lectureId} = req.body
     const userId = req.auth.userId
@@ -119,6 +130,7 @@ export const updateCourseProgress = async(req,res)=>{
 
 //get user Course Progress
 export const getCourseProgress = async(req,res)=>{
+    if (applyCors(req, res)) return; // ✅ CORS
   try {
     const userId = req.auth.userId;
     const { courseId } = req.body;
@@ -131,6 +143,8 @@ export const getCourseProgress = async(req,res)=>{
 
 //add user ratings to course
 export const addUserRating = async (req,res) =>{
+  if (applyCors(req, res)) return; // ✅ CORS
+  
   const userId = req.auth.userId;
   const { courseId, rating } = req.body;
 

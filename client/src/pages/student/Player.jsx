@@ -9,6 +9,7 @@ import Footer from "../../components/students/Footer";
 import Rating from "../../components/students/Rating";
 import { toast } from "react-toastify";
 import Loading from "../../components/students/Loading";
+import axios from "axios";
 
 const Player = () => {
   const {

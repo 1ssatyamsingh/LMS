@@ -7,32 +7,35 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 //////////////////////////////////////////////////////
 // CLERK WEBHOOK
 //////////////////////////////////////////////////////
 
 export const clerkWebhooks = async (req, res) => {
   try {
-    const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
+    console.log("🔥 Clerk webhook HIT");
+    // const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
 
-    await whook.verify(JSON.stringify(req.body),{
-      "svix-id": req.headers["svix-id"], 
+    await whook.verify(req.body, {
+      "svix-id": req.headers["svix-id"],
       "svix-timestamp": req.headers["svix-timestamp"],
       "svix-signature": req.headers["svix-signature"],
     });
-
-    const { data, type } = req.body;
+    const payload = JSON.parse(req.body.toString());
+    const { data, type } = payload;
 
     switch (type) {
       case "user.created":
+        console.log("Creating user...");
+
         await User.create({
           _id: data.id,
-          email: data.email_addresses[0].email_address,
-          name: data.first_name + " " + data.last_name,
+          email: data.email_addresses?.[0]?.email_address || "",
+          name: `${data.first_name || ""} ${data.last_name || ""}`,
           imageUrl: data.image_url,
         });
+
+        console.log("✅ User created in DB");
         break;
 
       case "user.updated":
@@ -52,8 +55,9 @@ export const clerkWebhooks = async (req, res) => {
     }
 
     res.json({ success: true });
-  } catch (error) {
-    res.json({ success: false, message: error.message });
+  }catch (error) {
+    console.error("CLERK WEBHOOK ERROR:", error); // 🔥 important
+    res.status(500).json({ success: false, message: error.message });
   }
 }
 
@@ -84,9 +88,17 @@ export const stripeWebhooks = async(request,response)=>{
 
       const {purchaseId} = session.data[0].metadata;
 
-      const purchaseData = await Purchase.findById(purchaseId)
-      const userData = await User.findById(purchaseData.userId)
-      const courseData = await Course.findById(purchaseData.courseId.toString())
+      const purchaseData = await Purchase.findById(purchaseId);
+      if (!purchaseData) return response.json({ received: true });
+
+      const userData = await User.findById(purchaseData.userId);
+      if (!userData) {
+        console.log("User not found!");
+        return response.json({ received: true });
+      }
+
+      const courseData = await Course.findById(purchaseData.courseId);
+      if (!courseData) return response.json({ received: true });
 
       courseData.enrolledStudents.push(userData)
       await courseData.save()

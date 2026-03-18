@@ -21,13 +21,13 @@ app.use(clerkMiddleware());
 
 // Stripe Webhook (RAW body)
 app.post(
-  "/stripe",
+  "/stripe-webhook",
   express.raw({ type: "application/json" }),
   stripeWebhooks
 );
 
 // Clerk Webhook
-app.post("/clerk", express.json(), clerkWebhooks);
+app.post("/clerk-webhook", express.raw({ type: "application/json" }), clerkWebhooks);
 
 // Normal Routes
 app.use(express.json());

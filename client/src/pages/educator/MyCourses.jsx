@@ -28,7 +28,7 @@ const MyCourses = () => {
   };
 
   useEffect(() => {
-    if (!isEducator) {
+    if (isEducator) {
       fetchEducatorCourses();
     }
   }, [isEducator]);
