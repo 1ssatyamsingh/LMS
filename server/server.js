@@ -16,7 +16,10 @@ const app = express();
 await connectDB();
 await connectCloudinary();
 
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+  credentials: true,
+}));
 app.use(clerkMiddleware());
 
 // Stripe Webhook (RAW body)
