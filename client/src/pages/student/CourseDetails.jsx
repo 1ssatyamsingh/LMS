@@ -45,7 +45,6 @@ const CourseDetails = () => {
 
   const enrollCourse = async () => {
     try {
-      console.log(userData);
       if (!userData) {
         toast.error("Please login to enroll in the course");
         return;

@@ -50,7 +50,6 @@ export const AppContextProvider = (props) => {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log(data.user);
       if (data.success) {
         setUserData(data.user);
       } else {
