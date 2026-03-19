@@ -13,25 +13,7 @@ dotenv.config()
 
 const app = express();
 
-let isConnected = false;
-async function initializeServer() {
-  try {     
-      await connectDB();
-    isConnected = true;
-  } catch (error) {
-    console.error("Failed to connect to the database:", error);
-    process.exit(1); // Exit the process with an error code
-  }
-}
-
-app.use((req, res, next) => {
-  if (!isConnected) {
-   initializeServer();
-  }
-  next();
-});
-
-
+await connectDB();
 await connectCloudinary();
 
 app.use(cors({
@@ -64,8 +46,6 @@ app.get("/", (req, res) => {
  return res.send({ success: true, message: "Test API Working" });
 });
 
-// app.listen(PORT, () => {
-//   console.log(`Server running on port ${PORT}`);
-// });
-
-module.exports = app;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
