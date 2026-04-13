@@ -17,7 +17,7 @@ await connectDB();
 await connectCloudinary();
 
 app.use(cors({
-  origin: ["https://lms-nhwv.vercel.app"],
+  origin: ["https://lms-nhwv.vercel.app", "http://localhost:5173"],
   credentials: true,
 }));
 app.use(clerkMiddleware());

@@ -14,36 +14,50 @@ dotenv.config();
 export const clerkWebhooks = async (req, res) => {
   try {
     console.log("🔥 Clerk webhook HIT");
-    // const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
+    if (!process.env.CLERK_WEBHOOK_SECRET) {
+      throw new Error("Missing CLERK_WEBHOOK_SECRET");
+    }
 
-    await whook.verify(req.body, {
+    const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
+    const payloadString = req.body.toString();
+
+    const payload = whook.verify(payloadString, {
       "svix-id": req.headers["svix-id"],
       "svix-timestamp": req.headers["svix-timestamp"],
       "svix-signature": req.headers["svix-signature"],
     });
-    const payload = JSON.parse(req.body.toString());
     const { data, type } = payload;
+    const email = data.email_addresses?.[0]?.email_address || "unknown@example.com";
+    const firstName = data.first_name || "";
+    const lastName = data.last_name || "";
+    const fullName = `${firstName} ${lastName}`.trim() || email.split("@")[0] || "User";
+    const imageUrl = data.image_url || "";
 
     switch (type) {
       case "user.created":
         console.log("Creating user...");
 
-        await User.create({
+        await User.findByIdAndUpdate(data.id, {
           _id: data.id,
-          email: data.email_addresses?.[0]?.email_address || "",
-          name: `${data.first_name || ""} ${data.last_name || ""}`,
-          imageUrl: data.image_url,
-        });
+          email,
+          name: fullName,
+          imageUrl,
+        }, { upsert: true, new: true, setDefaultsOnInsert: true });
 
         console.log("✅ User created in DB");
         break;
 
       case "user.updated":
-        await User.findByIdAndUpdate(data.id, {
-          email: data.email_addresses[0].email_address,
-          name: data.first_name + " " + data.last_name,
-          imageUrl: data.image_url,
-        });
+        await User.findByIdAndUpdate(
+          data.id,
+          {
+            _id: data.id,
+            email,
+            name: fullName,
+            imageUrl,
+          },
+          { upsert: true, new: true, setDefaultsOnInsert: true },
+        );
         break;
 
       case "user.deleted":

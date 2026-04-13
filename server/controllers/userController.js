@@ -5,6 +5,7 @@ import User from "../models/User.js"
 import CourseProgress from "../models/CourseProgress.js"
 import dotenv from "dotenv";
 import { applyCors } from '../utils/cors.js'; // ✅ import
+import { syncClerkUser } from "../utils/syncClerkUser.js";
 
 dotenv.config();
 
@@ -16,7 +17,7 @@ export const getUserData = async(req,res)=>{
 
     try {
         const userId = req.auth.userId
-        const user = await User.findById(userId)
+        const user = await syncClerkUser(userId)
         if(!user){
             res.json({success: false, message:"User not found!"})
             return
@@ -35,6 +36,7 @@ export const userEnrolledCourses = async (req,res)=>{
 
     try {
         const userId = req.auth.userId
+        await syncClerkUser(userId)
         const userData = await User.findById(userId).populate('enrolledCourses')
 
         res.json({success:true, enrolledCourses: userData.enrolledCourses})
@@ -54,7 +56,7 @@ export const purchaseCourse = async (req, res) => {
     const { courseId } = req.body;
     const { origin } = req.headers;
     const userId = req.auth.userId;
-    const userData = await User.findById(userId);
+    const userData = await syncClerkUser(userId);
     const courseData = await Course.findById(courseId);
 
     if (!userData || !courseData) {
@@ -158,7 +160,7 @@ export const addUserRating = async (req,res) =>{
       return res.json({success: false, message: "Course not found"})
     }
 
-    const user = await User.findById(userId);
+    const user = await syncClerkUser(userId);
     if(!user || !user.enrolledCourses.includes(courseId)){
       return res.json({success: false, message: "User has not purchased this course."})
     }
